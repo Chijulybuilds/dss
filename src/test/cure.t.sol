@@ -2,12 +2,12 @@
 
 pragma solidity >=0.6.12;
 
-import { DSTest } from "ds-test/test.sol";
-import { Cure } from "../cure.sol";
+import {DSTest} from "ds-test/test.sol";
+import {Cure} from "../cure.sol";
 
 interface Hevm {
     function warp(uint256) external;
-    function store(address,bytes32,bytes32) external;
+    function store(address, bytes32, bytes32) external;
 }
 
 contract SourceMock {
@@ -26,8 +26,7 @@ contract CureTest is DSTest {
     Hevm hevm;
     Cure cure;
 
-    bytes20 constant CHEAT_CODE =
-        bytes20(uint160(uint256(keccak256('hevm cheat code'))));
+    bytes20 constant CHEAT_CODE = bytes20(uint160(uint256(keccak256("hevm cheat code"))));
 
     function setUp() public {
         hevm = Hevm(address(CHEAT_CODE));

@@ -1,0 +1,152 @@
+No files changed, compilation skipped
+
+Ran 34 tests for src/test/dai.t.sol:DaiTest
+[PASS] testAllowanceStartsAtZero() (gas: 15515)
+Logs:
+  gas: 12982
+
+[PASS] testApproveSetsAllowance() (gas: 72741)
+Logs:
+  Test: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496
+  Token: 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f
+  Me: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496
+  User 2: 0xc7183455a4C133Ae270771860664b6B7ec320bB1
+  gas: 70121
+
+[PASS] testApproveWillModifyAllowance() (gas: 178489)
+[PASS] testApproveWillNotModifyAllowance() (gas: 165917)
+[PASS] testBurn() (gas: 43548)
+[PASS] testBurnAuth() (gas: 140739)
+[PASS] testBurnGuyAuth() (gas: 154865)
+[PASS] testBurnGuyWithTrust() (gas: 160494)
+[PASS] testBurnself() (gas: 46116)
+[PASS] testChargesAmountApproved() (gas: 121885)
+Logs:
+  gas: 124087
+
+[PASS] testDaiAddress() (gas: 14046)
+Logs:
+  Error: a == b not satisfied [address]
+    Expected: 0x11Ee1eeF5D446D07Cf26941C7F2B4B1Dfb9D030B
+      Actual: 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f
+
+[PASS] testDomain_Separator() (gas: 19337)
+Logs:
+  Error: a == b not satisfied [bytes32]
+    Expected: 0x68a9504c1a7fba795f7730732abab11cb5fa5113edd2396392abd5c1bbda4043
+      Actual: 0xfad5514f651d156e6fe232ee8ae83a6cfca2d936832a0cece2737056c6446819
+
+[PASS] testMintGuy() (gas: 65522)
+[PASS] testMintGuyAuth() (gas: 119328)
+[PASS] testMintself() (gas: 48492)
+[PASS] testPermit() (gas: 147142)
+[PASS] testPermitWithExpiry() (gas: 123742)
+[PASS] testRevertChargeMoreThanApproved() (gas: 160642)
+Logs:
+  Error: Assertion Failed
+  gas: 158067
+
+[PASS] testRevertIfWrongAccountTransfers() (gas: 48209)
+Logs:
+  Error: Assertion Failed
+  gas: 45678
+
+[PASS] testRevertInsufficientFundsTransfers() (gas: 101028)
+Logs:
+  Error: Assertion Failed
+  gas: 98409
+
+[PASS] testRevertMintGuyNoAuth() (gas: 41221)
+[PASS] testRevertPermitAddress0() (gas: 44445)
+[PASS] testRevertPermitWithExpiry() (gas: 55199)
+[PASS] testRevertReplay() (gas: 148820)
+[PASS] testRevertTransferFromSelfNonArbitrarySize() (gas: 54403)
+Logs:
+  Error: Assertion Failed
+
+[PASS] testRevertTransferWithoutApproval() (gas: 104001)
+Logs:
+  Error: Assertion Failed
+  gas: 101450
+
+[PASS] testRevertUntrustedTransferFrom() (gas: 59692)
+[PASS] testSetupPrecondition() (gas: 10621)
+[PASS] testTransferCost() (gas: 60033)
+Logs:
+  gas: 57433
+
+[PASS] testTransferFromSelf() (gas: 66751)
+[PASS] testTrustedTransferFrom() (gas: 128249)
+[PASS] testTrusting() (gas: 108382)
+[PASS] testTypehash() (gas: 5843)
+[PASS] testValidTransfers() (gas: 79111)
+Logs:
+  token11111: 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f
+  gas: 76510
+
+Suite result: ok. 34 passed; 0 failed; 0 skipped; finished in 129.05ms (124.97ms CPU time)
+
+╭--------------------------+-----------------+-------+--------+-------+---------╮
+| src/dai.sol:Dai Contract |                 |       |        |       |         |
++===============================================================================+
+| Deployment Cost          | Deployment Size |       |        |       |         |
+|--------------------------+-----------------+-------+--------+-------+---------|
+|                  1429297 |            6935 |       |        |       |         |
+|--------------------------+-----------------+-------+--------+-------+---------|
+|                          |                 |       |        |       |         |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| Function Name            | Min             | Avg   | Median | Max   | # Calls |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| DOMAIN_SEPARATOR         |            2448 |  2448 |   2448 |  2448 |       4 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| PERMIT_TYPEHASH          |             420 |   420 |    420 |   420 |       4 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| allowance                |            3169 |  3169 |   3169 |  3169 |      15 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| approve                  |           24739 | 43681 |  46663 | 47023 |       7 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| balanceOf                |            2891 |  2891 |   2891 |  2891 |      16 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| burn                     |           32022 | 33682 |  34512 | 34512 |       3 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| mint                     |           36910 | 62077 |  54010 | 71122 |      70 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| nonces                   |            2913 |  2913 |   2913 |  2913 |       3 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| permit                   |           28496 | 56032 |  58448 | 79198 |       6 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| rely                     |           46360 | 46360 |  46360 | 46360 |       2 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| totalSupply              |            2470 |  2470 |   2470 |  2470 |       1 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| transfer                 |           24562 | 48974 |  52055 | 52067 |       9 |
+|--------------------------+-----------------+-------+--------+-------+---------|
+| transferFrom             |           25097 | 31539 |  27463 | 52566 |       5 |
+╰--------------------------+-----------------+-------+--------+-------+---------╯
+
+╭---------------------------------------+-----------------+-------+--------+-------+---------╮
+| src/test/dai.t.sol:TokenUser Contract |                 |       |        |       |         |
++============================================================================================+
+| Deployment Cost                       | Deployment Size |       |        |       |         |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+|                                735260 |            3347 |       |        |       |         |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+|                                       |                 |       |        |       |         |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| Function Name                         | Min             | Avg   | Median | Max   | # Calls |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| doApprove(address)                    |           52656 | 52656 |  52656 | 52656 |       2 |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| doApprove(address,uint256)            |           52921 | 52921 |  52921 | 52921 |       1 |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| doBurn(address,uint256)               |           37980 | 37980 |  37980 | 37980 |       1 |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| doBurn(uint256)                       |           35106 | 35106 |  35106 | 35106 |       1 |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| doMint                                |           30644 | 45284 |  45284 | 59925 |       2 |
+|---------------------------------------+-----------------+-------+--------+-------+---------|
+| doTransferFrom                        |           33632 | 55286 |  59855 | 64667 |       5 |
+╰---------------------------------------+-----------------+-------+--------+-------+---------╯
+
+
+Ran 1 test suite in 233.85ms (129.05ms CPU time): 34 tests passed, 0 failed, 0 skipped (34 total tests)

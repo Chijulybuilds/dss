@@ -24,14 +24,14 @@ interface SourceLike {
 }
 
 contract Cure {
-    mapping (address => uint256) public wards;
+    mapping(address => uint256) public wards;
     uint256 public live;
     address[] public srcs;
     uint256 public wait;
     uint256 public when;
-    mapping (address => uint256) public pos; // position in srcs + 1, 0 means a source does not exist
-    mapping (address => uint256) public amt;
-    mapping (address => uint256) public loaded;
+    mapping(address => uint256) public pos; // position in srcs + 1, 0 means a source does not exist
+    mapping(address => uint256) public amt;
+    mapping(address => uint256) public loaded;
     uint256 public lCount;
     uint256 public say;
 
@@ -44,7 +44,7 @@ contract Cure {
     event Load(address indexed src);
     event Cage();
 
-    modifier auth {
+    modifier auth() {
         require(wards[msg.sender] == 1, "Cure/not-authorized");
         _;
     }
@@ -73,7 +73,9 @@ contract Cure {
     }
 
     function tell() external view returns (uint256) {
-        require(live == 0 && (lCount == srcs.length || block.timestamp >= when), "Cure/missing-load-and-time-not-passed");
+        require(
+            live == 0 && (lCount == srcs.length || block.timestamp >= when), "Cure/missing-load-and-time-not-passed"
+        );
         return say;
     }
 

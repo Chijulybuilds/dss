@@ -42,6 +42,7 @@ contract Dai {
     error Dai__InvalidPermit();
     error Dai__PermitExpired();
     error Dai__InvalidNonce();
+    error Dai__DaiNotAuthorized();
 
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -91,7 +92,6 @@ contract Dai {
 
     constructor(uint256 chainId_) {
         wards[msg.sender] = 1;
-
         DOMAIN_SEPARATOR =
             keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, NAME_HASH, VERSION_HASH, chainId_, address(this)));
     }
@@ -100,7 +100,9 @@ contract Dai {
     //////////////////////////////////////////////////////////////*/
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "Dai/not-authorized");
+        if (wards[msg.sender] != 1) {
+            revert Dai__DaiNotAuthorized();
+        }
         _;
     }
 

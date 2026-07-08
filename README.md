@@ -133,4 +133,3 @@ that is used by the Governance layer.
 
 
 
-##### DONT FORGET TO REMOVE THE COMMENTS FROM THE _rpow  function found in the pot.sol 

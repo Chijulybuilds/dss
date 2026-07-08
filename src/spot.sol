@@ -22,7 +22,7 @@ pragma solidity ^0.6.12;
 // New deployments of this contract will need to include custom events (TO DO).
 
 interface VatLike {
-    function file(bytes32, bytes32, uint) external;
+    function file(bytes32, bytes32, uint256) external;
 }
 
 interface PipLike {
@@ -30,36 +30,49 @@ interface PipLike {
 }
 
 contract Spotter {
-    // --- Auth ---
-    mapping (address => uint) public wards;
-    function rely(address guy) external auth { wards[guy] = 1;  }
-    function deny(address guy) external auth { wards[guy] = 0; }
-    modifier auth {
+    /*//////////////////////////////////////////////////////////////
+                                  AUTH
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(address => uint256) public wards;
+
+    function rely(address guy) external auth {
+        wards[guy] = 1;
+    }
+
+    function deny(address guy) external auth {
+        wards[guy] = 0;
+    }
+    modifier auth() {
         require(wards[msg.sender] == 1, "Spotter/not-authorized");
         _;
     }
 
     // --- Data ---
     struct Ilk {
-        PipLike pip;  // Price Feed
-        uint256 mat;  // Liquidation ratio [ray]
+        PipLike pip; // Price Feed
+        uint256 mat; // Liquidation ratio [ray]
     }
 
-    mapping (bytes32 => Ilk) public ilks;
+    mapping(bytes32 => Ilk) public ilks;
 
-    VatLike public vat;  // CDP Engine
-    uint256 public par;  // ref per dai [ray]
+    VatLike public vat; // CDP Engine
+    uint256 public par; // ref per dai [ray] used to peg price of DAI stable coin
 
     uint256 public live;
 
-    // --- Events ---
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
     event Poke(
-      bytes32 ilk,
-      bytes32 val,  // [wad]
-      uint256 spot  // [ray]
+        bytes32 ilk,
+        bytes32 val, // [wad]
+        uint256 spot // [ray]
     );
 
-    // --- Init ---
+    /*//////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
     constructor(address vat_) public {
         wards[msg.sender] = 1;
         vat = VatLike(vat_);
@@ -67,28 +80,58 @@ contract Spotter {
         live = 1;
     }
 
-    // --- Math ---
-    uint constant ONE = 10 ** 27;
+    /*//////////////////////////////////////////////////////////////
+                                  MATH
+    //////////////////////////////////////////////////////////////*/
 
-    function mul(uint x, uint y) internal pure returns (uint z) {
+    uint256 constant ONE = 10 ** 27;    // helps in price precision
+
+    // Arithmetic mutiplier helper function
+    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require(y == 0 || (z = x * y) / y == x);
     }
-    function rdiv(uint x, uint y) internal pure returns (uint z) {
+
+    // Arithmetic division helper function
+    function rdiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = mul(x, ONE) / y;
     }
 
-    // --- Administration ---
+    /*//////////////////////////////////////////////////////////////
+                             ADMINISTRATION
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+    * @dev sets which oracle belongs to which collateral
+    * @dev used by Governance when adding new collateral 
+    * @param ilk The collateral type
+    * @param what The parameter to set
+    * @param pip_ The oracle address
+    */
     function file(bytes32 ilk, bytes32 what, address pip_) external auth {
         require(live == 1, "Spotter/not-live");
         if (what == "pip") ilks[ilk].pip = PipLike(pip_);
         else revert("Spotter/file-unrecognized-param");
     }
-    function file(bytes32 what, uint data) external auth {
+
+    /**
+    * @dev changes reference price of DAI
+    * @notice although rarely used
+    * @param what The parameter to set
+    * @param data The new value
+    */
+    function file(bytes32 what, uint256 data) external auth {
         require(live == 1, "Spotter/not-live");
         if (what == "par") par = data;
         else revert("Spotter/file-unrecognized-param");
     }
-    function file(bytes32 ilk, bytes32 what, uint data) external auth {
+
+    /**
+    * @dev changes liquidation ratio
+    * @param ilk The collateral type
+    * @param what The parameter to set
+    * @param data The new value
+    */
+    function file(bytes32 ilk, bytes32 what, uint256 data) external auth {
         require(live == 1, "Spotter/not-live");
         if (what == "mat") ilks[ilk].mat = data;
         else revert("Spotter/file-unrecognized-param");
@@ -96,12 +139,13 @@ contract Spotter {
 
     // --- Update value ---
     function poke(bytes32 ilk) external {
-        (bytes32 val, bool has) = ilks[ilk].pip.peek();
-        uint256 spot = has ? rdiv(rdiv(mul(uint(val), 10 ** 9), par), ilks[ilk].mat) : 0;
+        (bytes32 val, bool has) = ilks[ilk].pip.peek();     // asks for the oracle price of collateral
+        uint256 spot = has ? rdiv(rdiv(mul(uint256(val), 10 ** 9), par), ilks[ilk].mat) : 0;
         vat.file(ilk, "spot", spot);
         emit Poke(ilk, val, spot);
     }
 
+    // called in cases of emergency shutdown
     function cage() external auth {
         live = 0;
     }

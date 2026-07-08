@@ -23,20 +23,29 @@ pragma solidity ^0.6.12;
 // It doesn't use LibNote anymore.
 // New deployments of this contract will need to include custom events (TO DO).
 
+/** 
+* @dev allows the GemJoin contract to interact or call ERC-20 functions
+*/
 interface GemLike {
-    function decimals() external view returns (uint);
-    function transfer(address,uint) external returns (bool);
-    function transferFrom(address,address,uint) external returns (bool);
+    function decimals() external view returns (uint256);
+    function transfer(address, uint256) external returns (bool);
+    function transferFrom(address, address, uint256) external returns (bool);
 }
 
+/**
+* @dev Used only by DAIJoin to destrot or create ERC-20 DAI
+*/
 interface DSTokenLike {
-    function mint(address,uint) external;
-    function burn(address,uint) external;
+    function mint(address, uint256) external;
+    function burn(address, uint256) external;
 }
 
+/** 
+* @dev used by both the GemJoin and DaiJoin to update account balances users internally
+*/
 interface VatLike {
-    function slip(bytes32,address,int) external;
-    function move(address,address,uint) external;
+    function slip(bytes32, address, int256) external;
+    function move(address, address, uint256) external;
 }
 
 /*
@@ -63,34 +72,51 @@ interface VatLike {
 
 */
 
+/**
+* @dev GemJOIN bridges collateral 
+*/
 contract GemJoin {
-    // --- Auth ---
-    mapping (address => uint) public wards;
+    /*//////////////////////////////////////////////////////////////
+                                  AUTH
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(address => uint256) public wards;
+
     function rely(address usr) external auth {
         wards[usr] = 1;
         emit Rely(usr);
     }
+
     function deny(address usr) external auth {
         wards[usr] = 0;
         emit Deny(usr);
     }
-    modifier auth {
+    modifier auth() {
         require(wards[msg.sender] == 1, "GemJoin/not-authorized");
         _;
     }
 
-    VatLike public vat;   // CDP Engine
-    bytes32 public ilk;   // Collateral Type
+    VatLike public vat; // CDP Engine
+    bytes32 public ilk; // Collateral Type
     GemLike public gem;
-    uint    public dec;
-    uint    public live;  // Active Flag
+    uint256 public dec;
+    uint256 public live; // Active Flag
 
-    // Events
+    uint256 constant ONE = 10 ** 27;
+
+    /*//////////////////////////////////////////////////////////////
+                                  AUTH
+    //////////////////////////////////////////////////////////////*/
+
     event Rely(address indexed usr);
     event Deny(address indexed usr);
     event Join(address indexed usr, uint256 wad);
     event Exit(address indexed usr, uint256 wad);
     event Cage();
+
+    /*//////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
 
     constructor(address vat_, bytes32 ilk_, address gem_) public {
         wards[msg.sender] = 1;
@@ -101,51 +127,76 @@ contract GemJoin {
         dec = gem.decimals();
         emit Rely(msg.sender);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    // called in cases of emergency shutdown
     function cage() external auth {
         live = 0;
         emit Cage();
     }
-    function join(address usr, uint wad) external {
+
+    // joins ERC-20 transfer from outside to the Vat accounting system
+    function join(address usr, uint256 wad) external {
         require(live == 1, "GemJoin/not-live");
-        require(int(wad) >= 0, "GemJoin/overflow");
-        vat.slip(ilk, usr, int(wad));
+        require(int256(wad) >= 0, "GemJoin/overflow");
+        vat.slip(ilk, usr, int256(wad));
         require(gem.transferFrom(msg.sender, address(this), wad), "GemJoin/failed-transfer");
         emit Join(usr, wad);
     }
-    function exit(address usr, uint wad) external {
+
+    // exits ERC-20 transfer from the Vat accounting system to outside
+    function exit(address usr, uint256 wad) external {
         require(wad <= 2 ** 255, "GemJoin/overflow");
-        vat.slip(ilk, msg.sender, -int(wad));
+        vat.slip(ilk, msg.sender, -int256(wad));
         require(gem.transfer(usr, wad), "GemJoin/failed-transfer");
         emit Exit(usr, wad);
     }
 }
 
+/** 
+* @dev DaiJoin bridges DAI
+*/
 contract DaiJoin {
-    // --- Auth ---
-    mapping (address => uint) public wards;
+    /*//////////////////////////////////////////////////////////////
+                                  AUTH
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(address => uint256) public wards;
+
     function rely(address usr) external auth {
         wards[usr] = 1;
         emit Rely(usr);
     }
+
     function deny(address usr) external auth {
         wards[usr] = 0;
         emit Deny(usr);
     }
-    modifier auth {
+    modifier auth() {
         require(wards[msg.sender] == 1, "DaiJoin/not-authorized");
         _;
     }
 
-    VatLike public vat;      // CDP Engine
-    DSTokenLike public dai;  // Stablecoin Token
-    uint    public live;     // Active Flag
+    VatLike public vat; // CDP Engine
+    DSTokenLike public dai; // Stablecoin(DAI) Token
+    uint256 public live; // Active Flag
 
-    // Events
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
+
     event Rely(address indexed usr);
     event Deny(address indexed usr);
     event Join(address indexed usr, uint256 wad);
     event Exit(address indexed usr, uint256 wad);
     event Cage();
+
+    /*//////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
 
     constructor(address vat_, address dai_) public {
         wards[msg.sender] = 1;
@@ -153,23 +204,39 @@ contract DaiJoin {
         vat = VatLike(vat_);
         dai = DSTokenLike(dai_);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    // called in cases of emergency shutdown
     function cage() external auth {
         live = 0;
         emit Cage();
     }
-    uint constant ONE = 10 ** 27;
-    function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x);
-    }
-    function join(address usr, uint wad) external {
-        vat.move(address(this), usr, mul(ONE, wad));
+   
+    // converts ERC20-DAI to Vat-DAI
+    function join(address usr, uint256 wad) external {
+        vat.move(address(this), usr, _mul(ONE, wad));   // _mul(ONE, wad) gives a total of 10^45; 10^27 * 10^18
         dai.burn(msg.sender, wad);
         emit Join(usr, wad);
     }
-    function exit(address usr, uint wad) external {
+
+    // converts Vat-DAI to ERC20-DAI
+    function exit(address usr, uint256 wad) external {
         require(live == 1, "DaiJoin/not-live");
-        vat.move(msg.sender, address(this), mul(ONE, wad));
+        vat.move(msg.sender, address(this), _mul(ONE, wad));
         dai.mint(usr, wad);
         emit Exit(usr, wad);
     }
+
+     /*//////////////////////////////////////////////////////////////
+                        INTERNAL PURE FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    // Multiplication helper function
+    function _mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require(y == 0 || (z = x * y) / y == x);
+    }
+
 }

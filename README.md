@@ -130,3 +130,7 @@ functions and configure it.
 
 It is expected that modification of this state will be via an interface
 that is used by the Governance layer.
+
+
+
+##### DONT FORGET TO REMOVE THE COMMENTS FROM THE _rpow  function found in the pot.sol 

@@ -19,29 +19,34 @@
 
 pragma solidity ^0.6.12;
 
+/*//////////////////////////////////////////////////////////////
+                               INTERFACE
+//////////////////////////////////////////////////////////////*/
+
 interface ClipperLike {
     function ilk() external view returns (bytes32);
-    function kick(
-        uint256 tab,
-        uint256 lot,
-        address usr,
-        address kpr
-    ) external returns (uint256);
+    function kick(uint256 tab, uint256 lot, address usr, address kpr) external returns (uint256);
 }
 
 interface VatLike {
-    function ilks(bytes32) external view returns (
-        uint256 Art,  // [wad]
-        uint256 rate, // [ray]
-        uint256 spot, // [ray]
-        uint256 line, // [rad]
-        uint256 dust  // [rad]
-    );
-    function urns(bytes32,address) external view returns (
-        uint256 ink,  // [wad]
-        uint256 art   // [wad]
-    );
-    function grab(bytes32,address,address,address,int256,int256) external;
+    function ilks(bytes32)
+        external
+        view
+        returns (
+            uint256 Art, // [wad]
+            uint256 rate, // [ray]
+            uint256 spot, // [ray]
+            uint256 line, // [rad]
+            uint256 dust // [rad]
+        );
+    function urns(bytes32, address)
+        external
+        view
+        returns (
+            uint256 ink, // [wad]
+            uint256 art // [wad]
+        );
+    function grab(bytes32, address, address, address, int256, int256) external;
     function hope(address) external;
     function nope(address) external;
 }
@@ -51,33 +56,48 @@ interface VowLike {
 }
 
 contract Dog {
-    // --- Auth ---
-    mapping (address => uint256) public wards;
-    function rely(address usr) external auth { wards[usr] = 1; emit Rely(usr); }
-    function deny(address usr) external auth { wards[usr] = 0; emit Deny(usr); }
-    modifier auth {
+    /*//////////////////////////////////////////////////////////////
+                                  AUTH
+    //////////////////////////////////////////////////////////////*/
+    mapping(address => uint256) public wards;
+
+    function rely(address usr) external auth {
+        wards[usr] = 1;
+        emit Rely(usr);
+    }
+
+    function deny(address usr) external auth {
+        wards[usr] = 0;
+        emit Deny(usr);
+    }
+    modifier auth() {
         require(wards[msg.sender] == 1, "Dog/not-authorized");
         _;
     }
 
-    // --- Data ---
+    /*//////////////////////////////////////////////////////////////
+                                  DATA
+    //////////////////////////////////////////////////////////////*/
+
     struct Ilk {
-        address clip;  // Liquidator
-        uint256 chop;  // Liquidation Penalty                                          [wad]
-        uint256 hole;  // Max DAI needed to cover debt+fees of active auctions per ilk [rad]
-        uint256 dirt;  // Amt DAI needed to cover debt+fees of active auctions per ilk [rad]
+        address clip; // Liquidator
+        uint256 chop; // Liquidation Penalty                                          [wad]
+        uint256 hole; // Max DAI needed to cover debt+fees of active auctions per ilk [rad]
+        uint256 dirt; // Amt DAI needed to cover debt+fees of active auctions per ilk [rad]
     }
 
-    VatLike immutable public vat;  // CDP Engine
+    VatLike public immutable vat; // CDP Engine
 
-    mapping (bytes32 => Ilk) public ilks;
+    mapping(bytes32 => Ilk) public ilks;
 
-    VowLike public vow;   // Debt Engine
-    uint256 public live;  // Active Flag
-    uint256 public Hole;  // Max DAI needed to cover debt+fees of active auctions [rad]
-    uint256 public Dirt;  // Amt DAI needed to cover debt+fees of active auctions [rad]
+    VowLike public vow; // Debt Engine
+    uint256 public live; // Active Flag
+    uint256 public Hole; // Max DAI needed to cover debt+fees of active auctions [rad]
+    uint256 public Dirt; // Amt DAI needed to cover debt+fees of active auctions [rad]
 
-    // --- Events ---
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
     event Rely(address indexed usr);
     event Deny(address indexed usr);
 
@@ -87,18 +107,21 @@ contract Dog {
     event File(bytes32 indexed ilk, bytes32 indexed what, address clip);
 
     event Bark(
-      bytes32 indexed ilk,
-      address indexed urn,
-      uint256 ink,
-      uint256 art,
-      uint256 due,
-      address clip,
-      uint256 indexed id
+        bytes32 indexed ilk,
+        address indexed urn,
+        uint256 ink,
+        uint256 art,
+        uint256 due,
+        address clip,
+        uint256 indexed id
     );
     event Digs(bytes32 indexed ilk, uint256 rad);
     event Cage();
 
-    // --- Init ---
+    /*//////////////////////////////////////////////////////////////
+                                  INIT
+    //////////////////////////////////////////////////////////////*/
+
     constructor(address vat_) public {
         vat = VatLike(vat_);
         live = 1;
@@ -106,46 +129,61 @@ contract Dog {
         emit Rely(msg.sender);
     }
 
-    // --- Math ---
+    /*//////////////////////////////////////////////////////////////
+                                  MATH
+    //////////////////////////////////////////////////////////////*/
     uint256 constant WAD = 10 ** 18;
 
     function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x <= y ? x : y;
     }
+
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x + y) >= x);
     }
+
     function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x - y) <= x);
     }
+
     function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require(y == 0 || (z = x * y) / y == x);
     }
 
-    // --- Administration ---
+    /*//////////////////////////////////////////////////////////////
+                             ADMINISTRATION
+    //////////////////////////////////////////////////////////////*/
     function file(bytes32 what, address data) external auth {
         if (what == "vow") vow = VowLike(data);
         else revert("Dog/file-unrecognized-param");
         emit File(what, data);
     }
+
     function file(bytes32 what, uint256 data) external auth {
         if (what == "Hole") Hole = data;
         else revert("Dog/file-unrecognized-param");
         emit File(what, data);
     }
+
     function file(bytes32 ilk, bytes32 what, uint256 data) external auth {
         if (what == "chop") {
             require(data >= WAD, "Dog/file-chop-lt-WAD");
             ilks[ilk].chop = data;
-        } else if (what == "hole") ilks[ilk].hole = data;
-        else revert("Dog/file-unrecognized-param");
+        } else if (what == "hole") {
+            ilks[ilk].hole = data;
+        } else {
+            revert("Dog/file-unrecognized-param");
+        }
         emit File(ilk, what, data);
     }
+
     function file(bytes32 ilk, bytes32 what, address clip) external auth {
         if (what == "clip") {
             require(ilk == ClipperLike(clip).ilk(), "Dog/file-ilk-neq-clip.ilk");
             ilks[ilk].clip = clip;
-        } else revert("Dog/file-unrecognized-param");
+        } else {
+            revert("Dog/file-unrecognized-param");
+        }
         emit File(ilk, what, clip);
     }
 
@@ -167,6 +205,12 @@ contract Dog {
     // have too little collateral to be interesting to Keepers (debt taken from Vault < ilk.dust),
     // in which case the function reverts. Please refer to the code and comments within if
     // more detail is desired.
+
+    /**
+    * @param ilk  The collateral type
+    * @param urn  The address of the Vault to liquidate
+    * @param kpr  Address to receive liquidation reward
+    */
     function bark(bytes32 ilk, address urn, address kpr) external returns (uint256 id) {
         require(live == 1, "Dog/not-live");
 
@@ -177,7 +221,7 @@ contract Dog {
         uint256 dust;
         {
             uint256 spot;
-            (,rate, spot,, dust) = vat.ilks(ilk);
+            (, rate, spot,, dust) = vat.ilks(ilk);
             require(spot > 0 && mul(ink, spot) < mul(art, rate), "Dog/not-unsafe");
 
             // Get the minimum value between:
@@ -192,7 +236,6 @@ contract Dog {
             // Partial liquidation edge case logic
             if (art > dart) {
                 if (mul(art - dart, rate) < dust) {
-
                     // If the leftover Vault would be dusty, just liquidate it entirely.
                     // This will result in at least one of dirt_i > hole_i or Dirt > Hole becoming true.
                     // The amount of excess will be bounded above by ceiling(dust_i * chop_i / WAD).
@@ -200,7 +243,6 @@ contract Dog {
                     // the extra amount of target DAI over the limits intended is not of economic concern.
                     dart = art;
                 } else {
-
                     // In a partial liquidation, the resulting auction should also be non-dusty.
                     require(mul(dart, rate) >= dust, "Dog/dusty-auction-from-partial-liquidation");
                 }
@@ -210,27 +252,20 @@ contract Dog {
         uint256 dink = mul(ink, dart) / art;
 
         require(dink > 0, "Dog/null-auction");
-        require(dart <= 2**255 && dink <= 2**255, "Dog/overflow");
+        require(dart <= 2 ** 255 && dink <= 2 ** 255, "Dog/overflow");
 
-        vat.grab(
-            ilk, urn, milk.clip, address(vow), -int256(dink), -int256(dart)
-        );
+        vat.grab(ilk, urn, milk.clip, address(vow), -int256(dink), -int256(dart));
 
         uint256 due = mul(dart, rate);
         vow.fess(due);
 
-        {   // Avoid stack too deep
+        { // Avoid stack too deep
             // This calcuation will overflow if dart*rate exceeds ~10^14
             uint256 tab = mul(due, milk.chop) / WAD;
             Dirt = add(Dirt, tab);
             ilks[ilk].dirt = add(milk.dirt, tab);
 
-            id = ClipperLike(milk.clip).kick({
-                tab: tab,
-                lot: dink,
-                usr: urn,
-                kpr: kpr
-            });
+            id = ClipperLike(milk.clip).kick({tab: tab, lot: dink, usr: urn, kpr: kpr});
         }
 
         emit Bark(ilk, urn, dink, dart, due, milk.clip, id);
@@ -242,6 +277,7 @@ contract Dog {
         emit Digs(ilk, rad);
     }
 
+    // Emergency Shutdown
     function cage() external auth {
         live = 0;
         emit Cage();

@@ -19,33 +19,33 @@
 
 pragma solidity ^0.6.12;
 
-import { DSTest } from "ds-test/test.sol";
-import { Vat } from "../vat.sol";
-import { Dog } from "../dog.sol";
+import {DSTest} from "ds-test/test.sol";
+import {Vat} from "../vat.sol";
+import {Dog} from "../dog.sol";
 
 contract VowMock {
-    function fess (uint256 due) public {}
+    function fess(uint256 due) public {}
 }
 
 contract ClipperMock {
     bytes32 public ilk;
+
     function setIlk(bytes32 wat) external {
         ilk = wat;
     }
-    function kick(uint256, uint256, address, address)
-        external pure returns (uint256 id) {
+
+    function kick(uint256, uint256, address, address) external pure returns (uint256 id) {
         id = 42;
     }
 }
 
 contract DogTest is DSTest {
-
     bytes32 constant ilk = "gold";
     address constant usr = address(1337);
-    uint256 constant THOUSAND = 1E3;
-    uint256 constant WAD = 1E18;
-    uint256 constant RAY = 1E27;
-    uint256 constant RAD = 1E45;
+    uint256 constant THOUSAND = 1e3;
+    uint256 constant WAD = 1e18;
+    uint256 constant RAY = 1e27;
+    uint256 constant RAD = 1e45;
     Vat vat;
     VowMock vow;
     ClipperMock clip;
@@ -203,13 +203,13 @@ contract DogTest is DSTest {
     // was also dusty and would fit in the remaining hole/Hole room.
     function test_bark_dusty_vault_dusty_room() public {
         // Use a chop that will give nice round numbers
-        uint256 CHOP = 110 * WAD / 100;  // 10%
+        uint256 CHOP = 110 * WAD / 100; // 10%
         dog.file(ilk, "chop", CHOP);
 
         // set both hole_i and Hole to the same value for this test
         uint256 ROOM = 200;
         uint256 HOLE = 33 * THOUSAND + ROOM;
-        dog.file(     "Hole", HOLE * RAD);
+        dog.file("Hole", HOLE * RAD);
         dog.file(ilk, "hole", HOLE * RAD);
 
         // Test using a non-zero rate to ensure the code is handling stability fees correctly.
@@ -227,7 +227,7 @@ contract DogTest is DSTest {
         // Create a small vault
         uint256 DUST_1 = 30;
         vat.file(ilk, "dust", DUST_1 * RAD);
-        setUrn(WAD / 10**4, DUST_1 * RAD / rate);
+        setUrn(WAD / 10 ** 4, DUST_1 * RAD / rate);
 
         // Dust limit goes up!
         uint256 DUST_2 = 1500;
@@ -277,7 +277,7 @@ contract DogTest is DSTest {
 
         // This will need to be partially liquidated
         setUrn(WAD, hole * WAD * WAD / chop);
-        assertTrue(!try_bark(ilk, usr, address(this)));  // should revert, as the auction would be dusty
+        assertTrue(!try_bark(ilk, usr, address(this))); // should revert, as the auction would be dusty
     }
 
     function test_bark_do_not_create_dusty_auction_Hole() public {
@@ -302,6 +302,6 @@ contract DogTest is DSTest {
 
         // This will need to be partially liquidated
         setUrn(WAD, Hole * WAD * WAD / chop);
-        assertTrue(!try_bark(ilk, usr, address(this)));  // should revert, as the auction would be dusty
+        assertTrue(!try_bark(ilk, usr, address(this))); // should revert, as the auction would be dusty
     }
 }
